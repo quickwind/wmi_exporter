@@ -4,6 +4,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -13,6 +16,7 @@ import (
 
 	"github.com/StackExchange/wmi"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
 	"github.com/quickwind/wmi_exporter/collector"
@@ -237,7 +241,7 @@ func main() {
 	log.Infoln("Build context", version.BuildContext())
 
 	log.Infoln("Collecting metrics...")
-	if err := prometheus.WriteToTextfile(*metricsOutput, prometheus.DefaultRegisterer); err != nil {
+	if err := writeToTextfile(*metricsOutput, prometheus.DefaultRegisterer); err != nil {
 		log.Fatalf("collection failed: %s", err)
 	}
 	log.Infoln("Done")
@@ -283,4 +287,30 @@ loop:
 	}
 	changes <- svc.Status{State: svc.StopPending}
 	return
+}
+
+func writeToTextfile(filename string, g Gatherer) error {
+	tmp, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename))
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+
+	mfs, err := g.Gather()
+	if err != nil {
+		return err
+	}
+	for _, mf := range mfs {
+		if _, err := expfmt.MetricFamilyToText(tmp, mf); err != nil {
+			return err
+		}
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Chmod(tmp.Name(), 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), filename)
 }
