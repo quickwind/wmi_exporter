@@ -289,7 +289,7 @@ loop:
 	return
 }
 
-func writeToTextfile(filename string, g Gatherer) error {
+func writeToTextfile(filename string, g prometheus.Gatherer) error {
 	tmp, err := ioutil.TempFile(filepath.Dir(filename), filepath.Base(filename))
 	if err != nil {
 		return err
