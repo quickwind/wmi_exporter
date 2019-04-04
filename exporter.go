@@ -241,15 +241,17 @@ func main() {
 	log.Infoln("Build context", version.BuildContext())
 
 	log.Infoln("Collecting metrics...")
-	if err := writeToTextfile(*metricsOutput, prometheus.DefaultRegisterer); err != nil {
+	if err := writeToTextfile(*metricsOutput, prometheus.DefaultGatherer); err != nil {
 		log.Fatalf("collection failed: %s", err)
 	}
 	log.Infoln("Done")
 
-	for {
-		if <-stopCh {
-			log.Info("Shutting down WMI exporter")
-			break
+	if !isInteractive {
+		for {
+			if <-stopCh {
+				log.Info("Shutting down WMI exporter")
+				break
+			}
 		}
 	}
 }
