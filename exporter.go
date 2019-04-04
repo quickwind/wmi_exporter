@@ -12,10 +12,10 @@ import (
 	"golang.org/x/sys/windows/svc"
 
 	"github.com/StackExchange/wmi"
-	"github.com/martinlindhe/wmi_exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"github.com/quickwind/wmi_exporter/collector"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

@@ -7,7 +7,7 @@ stack: go 1.10
 environment:
   GOPATH: c:\gopath
 
-clone_folder: c:\gopath\src\github.com\martinlindhe\wmi_exporter
+clone_folder: c:\gopath\src\github.com\quickwind\wmi_exporter
 
 install:
   - set PATH=%GOPATH%\bin;%PATH%
