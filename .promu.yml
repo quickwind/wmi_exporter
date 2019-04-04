@@ -1,5 +1,5 @@
 repository:
-    path: github.com/martinlindhe/wmi_exporter
+    path: github.com/quickwind/wmi_exporter
 build:
     binaries:
         - name: wmi_exporter

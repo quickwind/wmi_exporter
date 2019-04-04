@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -15,7 +14,6 @@ import (
 	"github.com/StackExchange/wmi"
 	"github.com/martinlindhe/wmi_exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -176,14 +174,10 @@ func initWbem() {
 
 func main() {
 	var (
-		listenAddress = kingpin.Flag(
-			"telemetry.addr",
-			"host:port for WMI exporter.",
-		).Default(":9182").String()
-		metricsPath = kingpin.Flag(
-			"telemetry.path",
-			"URL path for surfacing collected metrics.",
-		).Default("/metrics").String()
+		metricsOutput = kingpin.Flag(
+			"metrics.output",
+			"Output file for the metrics.",
+		).Default("./metrics.out").String()
 		enabledCollectors = kingpin.Flag(
 			"collectors.enabled",
 			"Comma-separated list of collectors to use. Use '[defaults]' as a placeholder for all the collectors enabled by default.").
@@ -239,33 +233,20 @@ func main() {
 	nodeCollector := WmiCollector{collectors: collectors}
 	prometheus.MustRegister(nodeCollector)
 
-	http.Handle(*metricsPath, promhttp.Handler())
-	http.HandleFunc("/health", healthCheck)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, *metricsPath, http.StatusMovedPermanently)
-	})
-
 	log.Infoln("Starting WMI exporter", version.Info())
 	log.Infoln("Build context", version.BuildContext())
 
-	go func() {
-		log.Infoln("Starting server on", *listenAddress)
-		log.Fatalf("cannot start WMI exporter: %s", http.ListenAndServe(*listenAddress, nil))
-	}()
+	log.Infoln("Collecting metrics...")
+	if err := prometheus.WriteToTextfile(*metricsOutput, prometheus.DefaultRegisterer); err != nil {
+		log.Fatalf("collection failed: %s", err)
+	}
+	log.Infoln("Done")
 
 	for {
 		if <-stopCh {
 			log.Info("Shutting down WMI exporter")
 			break
 		}
-	}
-}
-
-func healthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_, err := fmt.Fprintln(w, `{"status":"ok"}`)
-	if err != nil {
-		log.Debugf("Failed to write to stream: %v", err)
 	}
 }
 
